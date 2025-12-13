@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-user-plus"></i> Información del paciente
+                    </h3>
+                </div>
+                <div class="card-body">
+
+                    <form method="POST" action="{{ url_for('pacientes.nuevo') }}" class="needs-validation" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <!-- Primera fila: Cédula y Nombre -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="cedula" class="form-label">Cédula</label>
+                                    <input type="text" class="form-control" id="cedula" name="cedula" 
+                                           required pattern="[0-9]{7,10}"
+                                           minlength="7" maxlength="10"
+                                           title="Por favor ingrese un número de cédula válido (entre 7 y 10 dígitos)">
+                                    <div class="invalid-feedback">
+                                        Por favor ingrese un número de cédula válido (entre 7 y 10 dígitos)
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="nombre" class="form-label">Nombre</label>
+                                    <input type="text" class="form-control" id="nombre" name="nombre" 
+                                           required pattern="[A-Za-záéíóúÁÉÍÓÚñÑ\s]+"
+                                           minlength="2" maxlength="50">
+                                    <div class="invalid-feedback">
+                                        Por favor ingrese un nombre válido
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Segunda fila: Apellido y Teléfono -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="apellido" class="form-label">Apellido</label>
+                                    <input type="text" class="form-control" id="apellido" name="apellido" 
+                                           required pattern="[A-Za-záéíóúÁÉÍÓÚñÑ\s]+"
+                                           minlength="2" maxlength="50">
+                                    <div class="invalid-feedback">
+                                        Por favor ingrese un apellido válido
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="telefono" class="form-label">Teléfono</label>
+                                    <input type="tel" class="form-control" id="telefono" name="telefono" 
+                                           required pattern="[0-9]{7,10}"
+                                           minlength="7" maxlength="10"
+                                           title="Ingrese un número de teléfono válido (entre 7 y 10 dígitos)">
+                                    <div class="invalid-feedback">
+                                        Por favor ingrese un teléfono válido (entre 7 y 10 dígitos)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tercera fila: Email y Fecha de nacimiento -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email" 
+                                           required>
+                                    <div class="invalid-feedback">
+                                        Por favor ingrese un email válido
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="fecha_nacimiento" class="form-label">Fecha de nacimiento</label>
+                                    <input type="date" class="form-control" id="fecha_nacimiento" 
+                                           name="fecha_nacimiento" required
+                                           max="{{ today }}">
+                                    <div class="invalid-feedback">
+                                        Por favor seleccione una fecha válida
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones de acción -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{{ url_for('citas.nueva') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Agregar Font Awesome para los iconos -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<!-- Script para validación del formulario -->
+<script>
+(function () {
+    'use strict'
+
+    // Fetch all the forms we want to apply custom Bootstrap validation styles to
+    var forms = document.querySelectorAll('.needs-validation')
+
+    // Loop over them and prevent submission
+    Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+
+                form.classList.add('was-validated')
+            }, false)
+        })
+})()
+
+// Establecer la fecha máxima como hoy
+document.addEventListener('DOMContentLoaded', function() {
+    var today = new Date().toISOString().split('T')[0];
+    document.getElementById('fecha_nacimiento').setAttribute('max', today);
+});
+
+// Validación adicional para la cédula
+document.getElementById('cedula').addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '');
+});
+
+// Validación adicional para el teléfono
+document.getElementById('telefono').addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '');
+});
+
+// Validación adicional para el email
+document.getElementById('email').addEventListener('input', function(e) {
+    const emailValue = this.value;
+    const emailField = this;
+    
+    // Verificar si contiene @
+    if (emailValue && !emailValue.includes('@')) {
+        emailField.setCustomValidity('El correo electrónico debe contener el símbolo @');
+    } else {
+        emailField.setCustomValidity('');
+    }
+    
+    // Mostrar la validación visualmente
+    emailField.reportValidity();
+});
+
+</script>
+{% endblock %}

@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card mt-5">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4 class="mb-0"><i class="fas fa-user-edit"></i> Información del perfil</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" class="needs-validation" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Usuario</label>
+                            <input type="text" class="form-control" id="username" name="username" 
+                                   value="{{ user.username if user else current_user.username }}" 
+                                   required minlength="6" maxlength="15">
+                            <div class="invalid-feedback">
+                                Por favor ingrese un nombre de usuario válido (mínimo 6 caracteres)
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="nombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" 
+                                   required pattern="[A-Za-záéíóúÁÉÍÓÚñÑ\s]+"
+                                   minlength="5" maxlength="50"
+                                   value="{{ user.nombre if user else current_user.nombre }}">
+                            <div class="invalid-feedback">
+                                Por favor ingrese un nombre valido
+                            </div>
+                        </div>
+                    
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Nueva contraseña</label>
+                            <input type="password" class="form-control" id="password" name="password" 
+                                   placeholder="Dejar en blanco para mantener la actual">
+                            <div class="invalid-feedback" id="password-feedback">
+                                La contraseña debe tener al menos 8 caracteres
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">Confirmar nueva contraseña</label>
+                            <input type="password" class="form-control" id="confirm_password" 
+                                   name="confirm_password"
+                                   placeholder="Confirmar nueva contraseña">
+                            <div class="invalid-feedback" id="confirm-feedback">
+                                Las contraseñas no coinciden
+                            </div>
+                        </div>
+                    
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary" id="submit-btn">
+                                <i class="fas fa-save"></i> Guardar
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+                    
+                    <div class="text-center">
+                        <a href="{{ url_for('citas.index') }}" class="text-primary">
+                            <i class="fas fa-arrow-left"></i> Volver al inicio
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict'
+    
+    // Referencias a elementos del DOM
+    const passwordField = document.getElementById('password');
+    const confirmField = document.getElementById('confirm_password');
+    const passwordFeedback = document.getElementById('password-feedback');
+    const confirmFeedback = document.getElementById('confirm-feedback');
+    const form = document.querySelector('form');
+    
+    // Validación de Bootstrap
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+
+    // Función para validar la contraseña
+    function validatePassword() {
+        const password = passwordField.value;
+        
+        // Si la contraseña está vacía, es válida (se mantiene la actual)
+        if (password === '') {
+            passwordField.setCustomValidity('');
+            return true;
+        }
+        
+        // Validar longitud
+        if (password.length < 8) {
+            passwordField.setCustomValidity('La contraseña debe tener al menos 8 caracteres');
+            passwordFeedback.textContent = 'La contraseña debe tener al menos 8 caracteres';
+            return false;
+        }
+        
+        // Validar complejidad
+        const hasNumber = /\d/.test(password);
+        const hasLetter = /[a-zA-Z]/.test(password);
+        const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+        
+        if (!hasNumber || !hasLetter || !hasSpecial) {
+            passwordField.setCustomValidity('La contraseña debe contener al menos un número, una letra y un carácter especial');
+            passwordFeedback.textContent = 'La contraseña debe contener al menos un número, una letra y un carácter especial';
+            return false;
+        }
+        
+        // Si pasa todas las validaciones
+        passwordField.setCustomValidity('');
+        return true;
+    }
+    
+    // Función para validar la confirmación de contraseña
+    function validateConfirmPassword() {
+        const password = passwordField.value;
+        const confirm = confirmField.value;
+        
+        // Si ambos campos están vacíos, es válido
+        if (password === '' && confirm === '') {
+            confirmField.setCustomValidity('');
+            return true;
+        }
+        
+        // Si hay contraseña pero no coincide
+        if (password && confirm !== password) {
+            confirmField.setCustomValidity('Las contraseñas no coinciden');
+            confirmFeedback.textContent = 'Las contraseñas no coinciden';
+            return false;
+        }
+        
+        // Si coinciden
+        confirmField.setCustomValidity('');
+        return true;
+    }
+    
+    // Eventos para validación en tiempo real
+    passwordField.addEventListener('input', function() {
+        validatePassword();
+        validateConfirmPassword();
+    });
+    
+    confirmField.addEventListener('input', function() {
+        validateConfirmPassword();
+    });
+    
+    // Validación en el envío del formulario
+    form.addEventListener('submit', function(event) {
+        const isPasswordValid = validatePassword();
+        const isConfirmValid = validateConfirmPassword();
+        
+        if (!isPasswordValid || !isConfirmValid) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
+        form.classList.add('was-validated');
+    });
+})();
+</script>
+{% endblock %}

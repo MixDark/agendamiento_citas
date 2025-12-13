@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Histórico por fecha</h2>
+
+    <!-- Formulario de filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form id="filtroForm" class="row g-3" method="get">
+                <!-- Filtro por rango de fechas -->
+                <div class="col-md-3">
+                    <label for="fecha_inicio" class="form-label">Fecha inicial</label>
+                    <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio"
+                        value="{{ fecha_inicio }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="fecha_fin" class="form-label">Fecha final</label>
+                    <input type="date" class="form-control" id="fecha_fin" name="fecha_fin" value="{{ fecha_fin }}">
+                </div>
+                <!-- Botones -->
+                <div class="col-md-6 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-filter"></i> Filtrar
+                    </button>
+                    <button type="button" id="limpiarFiltros" class="btn btn-secondary me-2">
+                        <i class="fas fa-undo"></i> Limpiar
+                    </button>
+                    <button type="button" id="exportarExcel" class="btn btn-success" {% if citas is none or
+                        citas|length==0 %}disabled{% endif %}>
+                        <i class="fas fa-file-excel"></i> Exportar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de resultados -->
+    <div id="resultadosTabla" class="table-responsive">
+        {% if citas is none %}
+        <!-- No mostrar nada si no hay filtros aplicados -->
+        {% elif citas|length == 0 %}
+        <div class="alert alert-info">No se encontraron citas para el rango de fechas seleccionado.</div>
+        {% else %}
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Paciente</th>
+                    <th>Doctor</th>
+                    <th>Motivo</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cita in citas %}
+                <tr>
+                    <td>{{ cita[1]|format_date }}</td>
+                    <td>{{ cita[2]|format_time }}</td>
+                    <td>{{ cita[5] }} {{ cita[6] }}</td>
+                    <td>{{ cita[7] }} {{ cita[8] }}</td>
+                    <td>{{ cita[4] }}</td>
+                    <td>
+                        <span
+                            class="badge {% if cita[3] == 'completada' %}bg-success{% elif cita[3] == 'cancelada' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                            {{ cita[3]|capitalize }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const exportarExcelBtn = document.getElementById('exportarExcel');
+        const fechaInicioInput = document.getElementById('fecha_inicio');
+        const fechaFinInput = document.getElementById('fecha_fin');
+
+        // Función para establecer las fechas por defecto (primer y último día del mes)
+        function establecerFechasPorDefecto() {
+            // Verificar si ya hay valores en los campos
+            if (!fechaInicioInput.value && !fechaFinInput.value) {
+                const hoy = new Date();
+
+                // Primer día del mes actual
+                const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+
+                // Último día del mes actual
+                const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+
+                // Formatear fechas como YYYY-MM-DD para el input type="date"
+                fechaInicioInput.value = primerDia.toISOString().split('T')[0];
+                fechaFinInput.value = ultimoDia.toISOString().split('T')[0];
+            }
+        }
+
+        // Establecer fechas por defecto al cargar la página
+        establecerFechasPorDefecto();
+
+        // Manejar botón de limpiar
+        document.getElementById('limpiarFiltros').addEventListener('click', function () {
+            // Limpiar los campos de fecha
+            fechaInicioInput.value = '';
+            fechaFinInput.value = '';
+
+            // Redirigir a la página sin parámetros
+            window.location.href = "{{ url_for('historico.historico_fecha') }}";
+        });
+
+        // Manejar botón de exportar a Excel
+        if (exportarExcelBtn) {
+            exportarExcelBtn.addEventListener('click', function () {
+                const fechaInicio = fechaInicioInput.value;
+                const fechaFin = fechaFinInput.value;
+
+                if (!fechaInicio || !fechaFin) {
+                    alert('Por favor, seleccione un rango de fechas completo para exportar');
+                    return;
+                }
+
+                // Construir la URL para la exportación con los parámetros de fecha
+                let exportUrl = "{{ url_for('historico.exportar_excel_fecha') }}";
+                exportUrl += `?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
+
+                // Redirigir a la URL de exportación
+                window.location.href = exportUrl;
+            });
+        }
+    });
+</script>
+{% endblock %}

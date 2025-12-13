@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <!-- Selector de vista -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Consolidado</h4>
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('citas.index', filter_type='day', date=filter_date) }}" class="btn btn-light {% if filter_type == 'day' %}active{% endif %}">Por día</a>
+                            <a href="{{ url_for('citas.index', filter_type='month', month=filter_month) }}" class="btn btn-light {% if filter_type == 'month' %}active{% endif %}">Por mes</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Selector de fecha/mes -->
+                    <div class="row mb-4">
+                        <div class="col-md-6 offset-md-3">
+                            {% if filter_type == 'day' %}
+                            <form id="date-form" action="{{ url_for('citas.index') }}" method="get" class="input-group">
+                                <input type="hidden" name="filter_type" value="day">
+                                <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                <input type="date" class="form-control" id="selected-date" name="date" value="{{ filter_date }}">
+                                <button class="btn btn-outline-secondary" type="button" id="prev-date">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary" type="button" id="next-date">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </form>
+                            {% else %}
+                            <form id="month-form" action="{{ url_for('citas.index') }}" method="get" class="input-group">
+                                <input type="hidden" name="filter_type" value="month">
+                                <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                <input type="month" class="form-control" id="selected-month" name="month" value="{{ filter_month }}">
+                                <button class="btn btn-outline-secondary" type="button" id="prev-month">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary" type="button" id="next-month">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Título estático para el período seleccionado -->
+                    <div class="row mb-3">
+                        <div class="col-12 text-center">
+                            <h4>{{ title }}</h4>
+                        </div>
+                    </div>
+
+                    <!-- Tarjetas de estadísticas -->
+                    <div class="row">
+                        <!-- Total de citas -->
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <h1 class="display-4 text-primary">{{ total_citas }}</h1>
+                                    <h5 class="text-muted">Total de citas</h5>
+                                    <i class="fas fa-calendar-alt fa-2x text-primary mt-2"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Citas programadas -->
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <h1 class="display-4 text-primary">{{ programadas }}</h1>
+                                    <h5 class="text-muted">Programadas</h5>
+                                    <i class="fas fa-calendar-check fa-2x text-primary mt-2"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Citas completadas -->
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <h1 class="display-4 text-success">{{ completadas }}</h1>
+                                    <h5 class="text-muted">Completadas</h5>
+                                    <i class="fas fa-check-circle fa-2x text-success mt-2"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Citas canceladas -->
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <h1 class="display-4 text-danger">{{ canceladas }}</h1>
+                                    <h5 class="text-muted">Canceladas</h5>
+                                    <i class="fas fa-times-circle fa-2x text-danger mt-2"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Navegación de fechas
+    document.getElementById('prev-date')?.addEventListener('click', function() {
+        const dateInput = document.getElementById('selected-date');
+        const fecha = new Date(dateInput.value);
+        fecha.setDate(fecha.getDate() - 1);
+        dateInput.value = fecha.toISOString().split('T')[0];
+        document.getElementById('date-form').submit();
+    });
+    
+    document.getElementById('next-date')?.addEventListener('click', function() {
+        const dateInput = document.getElementById('selected-date');
+        const fecha = new Date(dateInput.value);
+        fecha.setDate(fecha.getDate() + 1);
+        dateInput.value = fecha.toISOString().split('T')[0];
+        document.getElementById('date-form').submit();
+    });
+    
+    // Navegación de meses
+    document.getElementById('prev-month')?.addEventListener('click', function() {
+        const monthInput = document.getElementById('selected-month');
+        const [anio, mes] = monthInput.value.split('-').map(Number);
+        
+        let nuevoMes = mes - 1;
+        let nuevoAnio = anio;
+        
+        if (nuevoMes < 1) {
+            nuevoMes = 12;
+            nuevoAnio -= 1;
+        }
+        
+        const nuevoMesStr = nuevoMes.toString().padStart(2, '0');
+        monthInput.value = `${nuevoAnio}-${nuevoMesStr}`;
+        
+        document.getElementById('month-form').submit();
+    });
+    
+    document.getElementById('next-month')?.addEventListener('click', function() {
+        const monthInput = document.getElementById('selected-month');
+        const [anio, mes] = monthInput.value.split('-').map(Number);
+        
+        let nuevoMes = mes + 1;
+        let nuevoAnio = anio;
+        
+        if (nuevoMes > 12) {
+            nuevoMes = 1;
+            nuevoAnio += 1;
+        }
+        
+        const nuevoMesStr = nuevoMes.toString().padStart(2, '0');
+        monthInput.value = `${nuevoAnio}-${nuevoMesStr}`;
+        
+        document.getElementById('month-form').submit();
+    });
+    
+    // Enviar formulario cuando cambie la fecha o mes
+    document.getElementById('selected-date')?.addEventListener('change', function() {
+        document.getElementById('date-form').submit();
+    });
+    
+    document.getElementById('selected-month')?.addEventListener('change', function() {
+        document.getElementById('month-form').submit();
+    });
+</script>
+
+<!-- Agregar Font Awesome para los iconos y Bootstrap 5 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}

@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Histórico por paciente</h2>
+    
+    <!-- Formulario de selección de paciente -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form id="filtroForm" class="row g-3">
+                <!-- Selector de paciente -->
+                <div class="col-md-8">
+                    <select class="form-select" id="paciente_id" name="paciente_id" required>
+                        <option value="" selected disabled>Seleccione un paciente</option>
+                        {% for paciente in pacientes %}
+                            <option value="{{ paciente[0] }}">{{ paciente[1] }} {{ paciente[2] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Botones -->
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                    <button type="button" id="limpiarFiltros" class="btn btn-secondary me-2">
+                        <i class="fas fa-undo"></i> Limpiar
+                    </button>
+                    <button type="button" id="exportarExcel" class="btn btn-success" disabled>
+                        <i class="fas fa-file-excel"></i> Exportar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de resultados -->
+    <div id="resultadosTabla" class="table-responsive">
+        <!-- La tabla se cargará aquí dinámicamente -->
+    </div>
+</div>
+
+<!-- Template para la tabla de resultados -->
+<script type="text/template" id="tablaHistoricoTemplate">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Paciente</th>
+                <th>Doctor</th>
+                <th>Motivo</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (historicos && historicos.length === 0) { %>
+                <tr>
+                    <td colspan="6" class="text-center">No hay registros históricos para este paciente</td>
+                </tr>
+            <% } else if (historicos) { %>
+                <% historicos.forEach(function(historico) { %>
+                    <tr>
+                        <td><%= historico.fecha %></td>
+                        <td><%= historico.hora %></td>
+                        <td><%= historico.paciente %></td>
+                        <td><%= historico.doctor %></td>
+                        <td><%= historico.motivo %></td>
+                        <td>
+                            <span class="badge <%= historico.estado.toLowerCase() === 'completada' ? 'bg-success' : (historico.estado.toLowerCase() === 'cancelada' ? 'bg-danger' : 'bg-warning text-dark') %>">
+                                <%= historico.estado %>
+                            </span>
+                        </td>
+                    </tr>
+                <% }); %>
+            <% } %>
+        </tbody>
+    </table>
+</script>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filtroForm = document.getElementById('filtroForm');
+    const resultadosTabla = document.getElementById('resultadosTabla');
+    const tablaHistoricoTemplate = _.template(document.getElementById('tablaHistoricoTemplate').innerHTML);
+    const pacienteSelect = document.getElementById('paciente_id');
+    const exportarExcelBtn = document.getElementById('exportarExcel');
+    
+    let datosActuales = []; // Para almacenar los datos actuales y usarlos en la exportación
+
+    // Para depuración
+    console.log("Número de pacientes cargados:", pacienteSelect.options.length - 1);
+    
+    // Verificar si hay pacientes cargados
+    if (pacienteSelect.options.length <= 1) {
+        console.error("No se cargaron pacientes en el selector");
+    }
+
+    // Manejar envío del formulario
+    filtroForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        console.log("Valor seleccionado:", pacienteSelect.value);
+        console.log("Índice seleccionado:", pacienteSelect.selectedIndex);
+        console.log("Texto seleccionado:", pacienteSelect.options[pacienteSelect.selectedIndex]?.text);
+        
+        if (pacienteSelect.value && pacienteSelect.value !== "") {
+            cargarHistorico();
+        } else {
+            resultadosTabla.innerHTML = '<div class="alert alert-warning">Por favor, seleccione un paciente primero</div>';
+            exportarExcelBtn.disabled = true;
+        }
+    });
+
+    // Manejar botón de limpiar
+    document.getElementById('limpiarFiltros').addEventListener('click', function() {
+        pacienteSelect.selectedIndex = 0;
+        resultadosTabla.innerHTML = '';
+        exportarExcelBtn.disabled = true;
+        datosActuales = [];
+    });
+    
+    // Manejar botón de exportar a Excel
+    exportarExcelBtn.addEventListener('click', function() {
+        if (datosActuales.length === 0) {
+            alert('No hay datos para exportar');
+            return;
+        }
+        
+        const pacienteId = pacienteSelect.value;
+        const pacienteNombre = pacienteSelect.options[pacienteSelect.selectedIndex].text;
+        
+        // Construir la URL para la exportación
+        const exportUrl = "{{ url_for('historico.exportar_excel_paciente', paciente_id=0) }}".replace('/0', `/${pacienteId}`);
+        
+        // Redirigir a la URL de exportación
+        window.location.href = exportUrl;
+    });
+
+    function cargarHistorico() {
+        const pacienteId = pacienteSelect.value;
+        
+        // Mostrar indicador de carga
+        resultadosTabla.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div></div>';
+        exportarExcelBtn.disabled = true;
+
+        // Construir la URL para la API
+        const apiUrl = "{{ url_for('historico.api_historico_paciente', paciente_id=0) }}".replace('/0', `/${pacienteId}`);
+        
+        console.log("Llamando a API:", apiUrl);
+        
+        fetch(apiUrl, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("Datos recibidos:", data);
+            datosActuales = data; // Guardar los datos para exportación
+            resultadosTabla.innerHTML = tablaHistoricoTemplate({ historicos: data });
+            
+            // Habilitar el botón de exportación si hay datos
+            exportarExcelBtn.disabled = data.length === 0;
+        })
+        .catch(error => {
+            console.error('Error completo:', error);
+            resultadosTabla.innerHTML = `<div class="alert alert-danger">Error al cargar los datos: ${error.message}</div>`;
+            exportarExcelBtn.disabled = true;
+            datosActuales = [];
+        });
+    }
+});
+</script>
+{% endblock %}

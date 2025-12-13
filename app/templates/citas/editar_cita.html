@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h3 class="card-title mb-0">Información de la cita</h3>
+                </div>
+                <div class="card-body">
+
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="mb-3">
+                            <label class="form-label">Paciente</label>
+                            <input type="text" class="form-control" value="{{ cita[7] }} {{ cita[8] }}" readonly>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Doctor</label>
+                            <input type="text" class="form-control" value="{{ cita[10] }} {{ cita[11] }}" readonly>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="fecha" class="form-label">Fecha</label>
+                                    <input type="date" class="form-control" id="fecha" name="fecha" required
+                                        value="{{ cita[2].strftime('%Y-%m-%d') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="hora" class="form-label">Hora</label>
+                                    {% set total_seconds = cita[3].total_seconds()|int %}
+                                    {% set hours = total_seconds // 3600 %}
+                                    {% set minutes = (total_seconds % 3600) // 60 %}
+                                    <input type="time" class="form-control" id="hora" name="hora" required
+                                        value="{{ '%02d:%02d'|format(hours, minutes) }}">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="motivo" class="form-label">Motivo de la consulta</label>
+                                <textarea class="form-control" id="motivo" name="motivo" rows="3"
+                                    required>{{ cita[4] }}</textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="estado" class="form-label">Estado</label>
+                                <select class="form-select" id="estado" name="estado" required>
+                                    <option value="programada" {% if cita[5]=='programada' %}selected{% endif %}>
+                                        Programada
+                                    </option>
+                                    <option value="completada" {% if cita[5]=='completada' %}selected{% endif %}>
+                                        Completada
+                                    </option>
+                                    <option value="cancelada" {% if cita[5]=='cancelada' %}selected{% endif %}>Cancelada
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="{{ url_for('citas.agendamiento') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Guardar
+                                </button>
+                            </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Agregar Font Awesome para los iconos -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+{% endblock %}

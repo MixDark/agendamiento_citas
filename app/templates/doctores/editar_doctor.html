@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-user-edit"></i> Información del doctor
+                    </h3>
+                </div>
+                <div class="card-body">
+
+                    <form method="POST" action="{{ url_for('doctores.editar', id_doctor=doctor[0]) }}" class="needs-validation" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="nombre" class="form-label">Nombre</label>
+                                    <input type="text" class="form-control" id="nombre" name="nombre" 
+                                           required pattern="[A-Za-záéíóúÁÉÍÓÚñÑ\s]+"
+                                           minlength="2" maxlength="50"
+                                           value="{{ doctor[1] }}">
+                                    <div class="invalid-feedback">
+                                        Por favor ingrese un nombre válido
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="apellido" class="form-label">Apellido</label>
+                                    <input type="text" class="form-control" id="apellido" name="apellido" 
+                                           required pattern="[A-Za-záéíóúÁÉÍÓÚñÑ\s]+"
+                                           minlength="2" maxlength="50"
+                                           value="{{ doctor[2] }}">
+                                    <div class="invalid-feedback">
+                                        Por favor ingrese un apellido válido
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="telefono" class="form-label">Teléfono</label>
+                                    <input type="tel" class="form-control" id="telefono" name="telefono" 
+                                           required pattern="[0-9]{7,10}"
+                                           minlength="7" maxlength="10"
+                                           title="Ingrese un número de teléfono válido (entre 7 y 10 dígitos)"
+                                           value="{{ doctor[3] }}">
+                                    <div class="invalid-feedback">
+                                        Por favor ingrese un número de cedula válido (entre 7 y 10 dígitos)
+                                    </div>
+                                </div>
+                            </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('citas.nueva') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save"></i> Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Agregar Font Awesome para los iconos -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<!-- Script para validación del formulario -->
+<script>
+(function () {
+    'use strict'
+
+    // Fetch all the forms we want to apply custom Bootstrap validation styles to
+    var forms = document.querySelectorAll('.needs-validation')
+
+    // Loop over them and prevent submission
+    Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+
+                form.classList.add('was-validated')
+            }, false)
+        })
+})()
+
+// Validación adicional para el teléfono
+document.getElementById('telefono').addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '').substring(0, 10);
+});
+</script>
+{% endblock %}

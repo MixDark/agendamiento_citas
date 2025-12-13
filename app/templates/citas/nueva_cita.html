@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card mt-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0"><i class="fas fa-calendar-plus"></i> Información de la cita</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('citas.nueva') }}" class="needs-validation" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="mb-3">
+                            <label for="id_paciente" class="form-label">Paciente</label>
+                            <div class="input-group">
+                                <select class="form-select" id="id_paciente" name="id_paciente" required>
+                                    <option value="">Seleccione un paciente</option>
+                                    {% for paciente in pacientes %}
+                                    <option value="{{ paciente[0] }}">{{ paciente[1] }} {{ paciente[2] }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="input-group-append d-flex gap-2">
+                                    <a href="{{ url_for('pacientes.nuevo') }}" class="btn btn-success">
+                                        <i class="fas fa-user-plus"></i> Nuevo
+                                    </a>
+                                    <a href="#" class="btn btn-warning" id="btnEditarPaciente" disabled
+                                        data-url-base="{{ url_for('pacientes.editar', id_paciente=0) }}">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </a>
+                                </div>
+                                <div class="invalid-feedback">
+                                    Por favor seleccione un paciente
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_doctor" class="form-label">Doctor</label>
+                            <div class="input-group">
+                                <select class="form-select" id="id_doctor" name="id_doctor" required>
+                                    <option value="">Seleccione un doctor</option>
+                                    {% for doctor in doctores %}
+                                    <option value="{{ doctor[0] }}">{{ doctor[1] }} {{ doctor[2] }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="input-group-append d-flex gap-2">
+                                    <a href="{{ url_for('doctores.nuevo') }}" class="btn btn-success">
+                                        <i class="fas fa-user-plus"></i> Nuevo
+                                    </a>
+                                    <a href="#" class="btn btn-warning" id="btnEditarDoctor" disabled
+                                        data-url-base="{{ url_for('doctores.editar', id_doctor=0) }}">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </a>
+                                </div>
+                                <div class="invalid-feedback">
+                                    Por favor seleccione un doctor
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="fecha" class="form-label">Fecha</label>
+                                    <input type="date" class="form-control" id="fecha" name="fecha" required
+                                        min="{{ today }}" value="{{ today }}">
+                                    <div class="invalid-feedback">
+                                        Por favor seleccione una fecha válida
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="hora" class="form-label">Hora</label>
+                                    <input type="time" class="form-control" id="hora" name="hora" required>
+                                    <div class="invalid-feedback">
+                                        Por favor seleccione una hora válida
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="motivo" class="form-label">Motivo de la consulta</label>
+                            <textarea class="form-control" id="motivo" name="motivo" rows="3" required minlength="5"
+                                maxlength="500"></textarea>
+                            <div class="invalid-feedback">
+                                Por favor ingrese el motivo de la consulta (mínimo 5 caracteres)
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('citas.agendamiento') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript para validaciones y funcionalidad -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        'use strict'
+
+        // Validación de Bootstrap
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+
+        // Establecer fecha mínima como hoy
+        var today = new Date().toISOString().split('T')[0];
+        document.getElementById('fecha').setAttribute('min', today);
+
+        // Establecer la hora actual por defecto
+        const horaInput = document.getElementById('hora');
+        if (!horaInput.value) {
+            const ahora = new Date();
+            let horas = ahora.getHours();
+            let minutos = ahora.getMinutes();
+
+            // Formatear horas y minutos para asegurar formato HH:MM
+            horas = horas < 10 ? '0' + horas : horas;
+            minutos = minutos < 10 ? '0' + minutos : minutos;
+
+            horaInput.value = `${horas}:${minutos}`;
+        }
+
+        // Manejar el botón de editar paciente
+        const selectPaciente = document.getElementById('id_paciente');
+        const btnEditarPaciente = document.getElementById('btnEditarPaciente');
+        const urlBasePaciente = btnEditarPaciente.getAttribute('data-url-base');
+
+        selectPaciente.addEventListener('change', function () {
+            if (this.value) {
+                btnEditarPaciente.href = urlBasePaciente.replace('0', this.value);
+                btnEditarPaciente.disabled = false;
+            } else {
+                btnEditarPaciente.href = '#';
+                btnEditarPaciente.disabled = true;
+            }
+        });
+
+        // Manejar el botón de editar doctor
+        const selectDoctor = document.getElementById('id_doctor');
+        const btnEditarDoctor = document.getElementById('btnEditarDoctor');
+        const urlBaseDoctor = btnEditarDoctor.getAttribute('data-url-base');
+
+        selectDoctor.addEventListener('change', function () {
+            if (this.value) {
+                btnEditarDoctor.href = urlBaseDoctor.replace('0', this.value);
+                btnEditarDoctor.disabled = false;
+            } else {
+                btnEditarDoctor.href = '#';
+                btnEditarDoctor.disabled = true;
+            }
+        });
+
+        // Validar disponibilidad de cita al seleccionar fecha, hora y doctor
+        const fechaInput = document.getElementById('fecha');
+
+        function validarDisponibilidad() {
+            const fecha = fechaInput.value;
+            const hora = horaInput.value;
+            const doctorId = selectDoctor.value;
+
+            // Limpiar mensajes de error previos
+            fechaInput.setCustomValidity('');
+            horaInput.setCustomValidity('');
+            document.getElementById('hora-feedback').textContent = '';
+
+            if (fecha && hora && doctorId) {
+                // Verificar día laborable (lunes a sábado)
+                const fechaObj = new Date(fecha);
+                const diaSemana = fechaObj.getDay(); // 0 = domingo, 6 = sábado
+
+                if (diaSemana === 0) {
+                    fechaInput.setCustomValidity('Las citas solo están disponibles de lunes a sábado');
+                    document.getElementById('fecha-feedback').textContent = 'Las citas solo están disponibles de lunes a sábado';
+                    return false;
+                }
+
+                // Verificar disponibilidad con el servidor (sin restricción de horario)
+                fetch(`/api/verificar_disponibilidad?fecha=${fecha}&hora=${hora}&doctor_id=${doctorId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error en la respuesta del servidor');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (!data.disponible) {
+                            horaInput.setCustomValidity('El doctor no está disponible en este horario');
+                            document.getElementById('hora-feedback').textContent = 'El doctor no está disponible en este horario';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al verificar disponibilidad:', error);
+                        // Si hay error de conexión, permitimos continuar pero mostramos advertencia
+                        document.getElementById('hora-feedback').textContent = 'No se pudo verificar la disponibilidad';
+                    });
+            }
+
+            return true;
+        }
+
+        // Agregar validación adicional para asegurar que se seleccionen paciente y doctor
+        document.querySelector('form').addEventListener('submit', function (event) {
+            const idPaciente = document.getElementById('id_paciente').value;
+            const idDoctor = document.getElementById('id_doctor').value;
+
+            if (!idPaciente || !idDoctor) {
+                event.preventDefault();
+
+                if (!idPaciente) {
+                    document.getElementById('id_paciente').setCustomValidity('Debe seleccionar un paciente');
+                } else {
+                    document.getElementById('id_paciente').setCustomValidity('');
+                }
+
+                if (!idDoctor) {
+                    document.getElementById('id_doctor').setCustomValidity('Debe seleccionar un doctor');
+                } else {
+                    document.getElementById('id_doctor').setCustomValidity('');
+                }
+
+                // Mostrar los mensajes de validación
+                document.querySelector('form').classList.add('was-validated');
+            }
+        });
+
+        // Limpiar validaciones al cambiar selección
+        selectPaciente.addEventListener('change', function () {
+            if (this.value) {
+                this.setCustomValidity('');
+            }
+        });
+
+        selectDoctor.addEventListener('change', function () {
+            if (this.value) {
+                this.setCustomValidity('');
+            }
+        });
+
+        fechaInput.addEventListener('change', validarDisponibilidad);
+        horaInput.addEventListener('change', validarDisponibilidad);
+        selectDoctor.addEventListener('change', validarDisponibilidad);
+    });
+</script>
+
+<!-- Estilos CSS personalizados -->
+<style>
+    /* Espaciado entre elementos del input-group */
+    .input-group>* {
+        margin-right: 10px !important;
+    }
+
+    .input-group>*:last-child {
+        margin-right: 0 !important;
+    }
+
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    /* Mejorar la apariencia del grupo de botones */
+    .input-group {
+        flex-wrap: nowrap;
+        gap: 10px;
+    }
+
+    .input-group .btn {
+        white-space: nowrap;
+    }
+
+    /* Asegurar que el select tenga un ancho apropiado */
+    .input-group .form-select {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    /* Ajustar el ancho de los botones para que sean consistentes */
+    .input-group .btn {
+        flex: 0 0 auto;
+    }
+
+    /* Espaciado adicional para el grupo de botones */
+    .input-group-append {
+        margin-left: 10px;
+    }
+
+    /* Asegurar que los botones mantengan su tamaño */
+    .input-group-append .btn {
+        padding: 0.375rem 0.75rem;
+    }
+
+    /* Estilo para mensajes de error */
+    .invalid-feedback {
+        display: none;
+        width: 100%;
+        margin-top: 0.25rem;
+        font-size: 80%;
+        color: #dc3545;
+    }
+
+    .was-validated .form-control:invalid~.invalid-feedback,
+    .was-validated .form-select:invalid~.invalid-feedback {
+        display: block;
+    }
+</style>
+{% endblock %}
