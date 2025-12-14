@@ -47,37 +47,38 @@
         <tbody>
             {% for usuario in usuarios %}
             <tr>
-                <td>{{ usuario[1] }}</td>  <!-- username -->
-                <td>{{ usuario[2] }}</td>  <!-- nombre -->
+                <td>{{ usuario[1] }}</td> <!-- username -->
+                <td>{{ usuario[2] }}</td> <!-- nombre -->
                 <td>{{ "Activo" if usuario[4] else "Inactivo" }}</td>
                 <td>{{ "Sí" if usuario[3] else "No" }}</td>
                 <td>
                     {% if usuario[0] != current_user.id %}
-                        <form action="{{ url_for('admin.reset_user_password', id_usuario=usuario[0]) }}" 
-                            method="POST" class="d-inline" id="resetForm{{ usuario[0] }}">
-                            <button type="button" class="btn btn-warning btn-sm" 
-                                    data-user-id="{{ usuario[0] }}"
-                                    data-username="{{ usuario[1] }}"
-                                    onclick="confirmPasswordReset(this)">
-                                Resetear contraseña
-                            </button>
-                        </form>
-                        
-                        <form action="{{ url_for('admin.toggle_admin_status', id_usuario=usuario[0]) }}" 
-                              method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-info btn-sm">
-                                {{ "Quitar Admin" if usuario[3] else "Hacer admin" }}
-                            </button>
-                        </form>
-                        
-                        <form action="{{ url_for('admin.toggle_user_status', id_usuario=usuario[0]) }}" 
-                              method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-danger btn-sm">
-                                {{ "Desactivar" if usuario[4] else "Activar" }}
-                            </button>
-                        </form>
+                    <form action="{{ url_for('admin.reset_user_password', id_usuario=usuario[0]) }}" method="POST"
+                        class="d-inline" id="resetForm{{ usuario[0] }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <button type="button" class="btn btn-warning btn-sm" data-user-id="{{ usuario[0] }}"
+                            data-username="{{ usuario[1] }}" onclick="confirmPasswordReset(this)">
+                            Resetear contraseña
+                        </button>
+                    </form>
+
+                    <form action="{{ url_for('admin.toggle_admin_status', id_usuario=usuario[0]) }}" method="POST"
+                        class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <button type="submit" class="btn btn-info btn-sm">
+                            {{ "Quitar Admin" if usuario[3] else "Hacer admin" }}
+                        </button>
+                    </form>
+
+                    <form action="{{ url_for('admin.toggle_user_status', id_usuario=usuario[0]) }}" method="POST"
+                        class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            {{ "Desactivar" if usuario[4] else "Activar" }}
+                        </button>
+                    </form>
                     {% else %}
-                        <em>Usuario actual</em>
+                    <em>Usuario actual</em>
                     {% endif %}
                 </td>
             </tr>
@@ -90,46 +91,49 @@
 
 {% block scripts %}
 <script>
-function confirmPasswordReset(button) {
-    const userId = button.getAttribute('data-user-id');
-    const username = button.getAttribute('data-username');
-    
-    if (confirm(`¿Estás seguro de que deseas resetear la contraseña del usuario ${username}?`)) {
-        const form = document.getElementById(`resetForm${userId}`);
-        fetch(form.action, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('newPassword').value = data.password;
-                new bootstrap.Modal(document.getElementById('passwordModal')).show();
-            } else {
-                alert('Error al resetear la contraseña');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error al resetear la contraseña');
-        });
-    }
-}
+    function confirmPasswordReset(button) {
+        const userId = button.getAttribute('data-user-id');
+        const username = button.getAttribute('data-username');
 
-function copyPassword() {
-    const passwordInput = document.getElementById('newPassword');
-    passwordInput.select();
-    document.execCommand('copy');
-    
-    // Muestra una notificación de copiado
-    const button = event.target.closest('button');
-    const originalText = button.innerHTML;
-    button.innerHTML = '<i class="fas fa-check"></i> Copiado';
-    setTimeout(() => {
-        button.innerHTML = originalText;
-    }, 2000);
-}
+        if (confirm(`¿Estás seguro de que deseas resetear la contraseña del usuario ${username}?`)) {
+            const form = document.getElementById(`resetForm${userId}`);
+            const csrfToken = form.querySelector('input[name="csrf_token"]').value;
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                },
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('newPassword').value = data.password;
+                        new bootstrap.Modal(document.getElementById('passwordModal')).show();
+                    } else {
+                        alert('Error al resetear la contraseña');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al resetear la contraseña');
+                });
+        }
+    }
+
+    function copyPassword() {
+        const passwordInput = document.getElementById('newPassword');
+        passwordInput.select();
+        document.execCommand('copy');
+
+        // Muestra una notificación de copiado
+        const button = event.target.closest('button');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check"></i> Copiado';
+        setTimeout(() => {
+            button.innerHTML = originalText;
+        }, 2000);
+    }
 </script>
 {% endblock %}
