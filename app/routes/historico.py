@@ -39,7 +39,7 @@ def historico_fecha():
             FROM citas c 
             JOIN pacientes p ON c.id_paciente = p.id_paciente 
             JOIN doctores d ON c.id_doctor = d.id_doctor
-            WHERE c.estado IN ('Completada', 'Cancelada')
+            WHERE c.estado IN ('completada', 'cancelada')
         '''
 
         params = []
@@ -117,7 +117,7 @@ def api_historico_paciente(paciente_id):
             FROM citas c 
             JOIN pacientes p ON c.id_paciente = p.id_paciente
             JOIN doctores d ON c.id_doctor = d.id_doctor          
-            WHERE c.id_paciente = %s AND c.estado IN ('Completada', 'Cancelada')
+            WHERE c.id_paciente = %s AND c.estado IN ('completada', 'cancelada')
             ORDER BY c.fecha DESC, c.hora DESC
         ''', (paciente_id,))
 
@@ -180,7 +180,7 @@ def api_historico_doctor(doctor_id):
             FROM citas c 
             JOIN pacientes p ON c.id_paciente = p.id_paciente
             JOIN doctores d ON c.id_doctor = d.id_doctor          
-            WHERE c.id_doctor = %s AND c.estado IN ('Completada', 'Cancelada')
+            WHERE c.id_doctor = %s AND c.estado IN ('completada', 'cancelada')
             ORDER BY c.fecha DESC, c.hora DESC
         ''', (doctor_id,))
 
