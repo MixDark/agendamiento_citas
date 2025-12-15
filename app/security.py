@@ -1,98 +1,62 @@
 """
-Módulo de seguridad para la aplicación de agendamiento de citas.
-Proporciona configuración de headers de seguridad HTTP y otras medidas de protección.
+Módulo de seguridad de aplicación (Flask)
 """
 from flask import Flask
 
 
 class SecurityHeaders:
-    """Configurador de headers de seguridad HTTP"""
-    
+    """Headers de seguridad a nivel aplicación"""
+
     @staticmethod
     def init_app(app: Flask):
-        """
-        Inicializa los headers de seguridad para la aplicación Flask.
-        
-        Args:
-            app: Instancia de la aplicación Flask
-        """
-        
+
         @app.after_request
         def set_security_headers(response):
-            """Agrega headers de seguridad a todas las respuestas"""
-            
-            # Prevenir MIME type sniffing
+
+            # Previene MIME sniffing
             response.headers['X-Content-Type-Options'] = 'nosniff'
-            
-            # Prevenir clickjacking
-            response.headers['X-Frame-Options'] = 'DENY'
-            
-            # Habilitar protección XSS del navegador
+
+            # Protección XSS legacy (no rompe nada)
             response.headers['X-XSS-Protection'] = '1; mode=block'
-            
-            # Forzar HTTPS en producción (solo si está en HTTPS)
-            if app.config.get('PREFERRED_URL_SCHEME') == 'https':
-                response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-            
-            # Content Security Policy (política)
-            # Permite recursos de CDNs necesarios para la aplicación
-            csp = (
-                "default-src 'self'; "
-                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com; "
-                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
-                "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
-                "img-src 'self' data:; "
-                "connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
-                "frame-ancestors 'none';"
-            )
-            response.headers['Content-Security-Policy'] = csp
-            
-            # Política de referrer (no enviar información sensible)
+
+            # Política de referrer
             response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-            
-            # Política de permisos (deshabilitar características no usadas)
-            response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
-            
+
+            # Política de permisos
+            response.headers['Permissions-Policy'] = (
+                "geolocation=(), microphone=(), camera=()"
+            )
+
             return response
-        
+
         return app
 
 
 class SecurityConfig:
-    """Configuración de seguridad adicional"""
-    
-    # Configuración de sesiones seguras
-    SESSION_COOKIE_SECURE = True  # Solo HTTPS en producción
-    SESSION_COOKIE_HTTPONLY = True  # No accesible desde JavaScript
-    SESSION_COOKIE_SAMESITE = 'Lax'  # Protección CSRF adicional
-    
-    # Tiempo de expiración de sesión (30 minutos)
-    PERMANENT_SESSION_LIFETIME = 1800
-    
-    # Configuración de CSRF
+    """Configuración de seguridad lógica"""
+
+    # Cookies seguras
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = True
+
+    # Sesión
+    PERMANENT_SESSION_LIFETIME = 1800  # 30 minutos
+
+    # CSRF
     WTF_CSRF_ENABLED = True
-    WTF_CSRF_TIME_LIMIT = None  # Sin límite de tiempo para tokens CSRF
-    
+    WTF_CSRF_TIME_LIMIT = None
+
     @staticmethod
     def init_app(app: Flask):
-        """
-        Aplica configuración de seguridad a la aplicación.
-        
-        Args:
-            app: Instancia de la aplicación Flask
-        """
-        # Aplicar configuración de sesiones
-        app.config['SESSION_COOKIE_HTTPONLY'] = SecurityConfig.SESSION_COOKIE_HTTPONLY
-        app.config['SESSION_COOKIE_SAMESITE'] = SecurityConfig.SESSION_COOKIE_SAMESITE
-        
-        # Solo forzar HTTPS en producción
-        if not app.debug:
-            app.config['SESSION_COOKIE_SECURE'] = SecurityConfig.SESSION_COOKIE_SECURE
-        
-        app.config['PERMANENT_SESSION_LIFETIME'] = SecurityConfig.PERMANENT_SESSION_LIFETIME
-        
-        # Configuración CSRF
-        app.config['WTF_CSRF_ENABLED'] = SecurityConfig.WTF_CSRF_ENABLED
-        app.config['WTF_CSRF_TIME_LIMIT'] = SecurityConfig.WTF_CSRF_TIME_LIMIT
-        
+
+        app.config.update(
+            SESSION_COOKIE_HTTPONLY=SecurityConfig.SESSION_COOKIE_HTTPONLY,
+            SESSION_COOKIE_SAMESITE=SecurityConfig.SESSION_COOKIE_SAMESITE,
+            SESSION_COOKIE_SECURE=not app.debug,
+            PERMANENT_SESSION_LIFETIME=SecurityConfig.PERMANENT_SESSION_LIFETIME,
+            WTF_CSRF_ENABLED=SecurityConfig.WTF_CSRF_ENABLED,
+            WTF_CSRF_TIME_LIMIT=SecurityConfig.WTF_CSRF_TIME_LIMIT,
+        )
+
         return app
