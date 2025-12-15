@@ -25,7 +25,7 @@ class EmailNotifier:
                         <li>Si no puede asistir, por favor cancele su cita con anticipación</li>
                     </ul>
                     <p>Saludos cordiales,<br>
-                    Consultorio médico</p>
+                    Isis Med</p>
                 </body>
             </html>
             """

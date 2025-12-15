@@ -259,7 +259,7 @@ def agendamiento():
             FROM citas c 
             JOIN pacientes p ON c.id_paciente = p.id_paciente 
             JOIN doctores d ON c.id_doctor = d.id_doctor        
-            WHERE c.estado = 'Programada'
+            WHERE c.estado = 'programada'
             ORDER BY c.fecha DESC, c.hora DESC
         ''')
         citas = cur.fetchall()

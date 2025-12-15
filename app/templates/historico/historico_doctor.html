@@ -67,8 +67,8 @@
                         <td><%= historico.doctor %></td>
                         <td><%= historico.motivo %></td>
                         <td>
-                            <span class="badge <%= historico.estado.toLowerCase() === 'completada' ? 'bg-success' : (historico.estado.toLowerCase() === 'cancelada' ? 'bg-danger' : 'bg-warning text-dark') %>">
-                                <%= historico.estado %>
+                            <span class="badge <%= getColorEstado(historico.estado) %>">
+                                <%= mapearEstado(historico.estado) %>
                             </span>
                         </td>
                     </tr>
@@ -83,6 +83,26 @@
 {% block scripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
 <script>
+// Mapeo de estados para mostrar nombres amigables sin cambiar BD
+const MAPEO_ESTADOS = {
+    'completada': 'Completada',
+    'cancelada': 'Cancelada'
+};
+
+function mapearEstado(estado) {
+    if (!estado) return 'Desconocido';
+    const estadoLower = estado.toLowerCase().trim();
+    return MAPEO_ESTADOS[estadoLower] || estado;
+}
+
+function getColorEstado(estado) {
+    if (!estado) return 'bg-secondary';
+    const estadoLower = estado.toLowerCase().trim();
+    if (estadoLower === 'completada') return 'bg-success';
+    if (estadoLower === 'rechazada' || estadoLower === 'cancelada') return 'bg-danger';
+    return 'bg-secondary';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const filtroForm = document.getElementById('filtroForm');
     const resultadosTabla = document.getElementById('resultadosTabla');
@@ -135,7 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const doctorNombre = doctorSelect.options[doctorSelect.selectedIndex].text;
         
         // Construir la URL para la exportación
-        const exportUrl = "{{ url_for('historico.exportar_excel_doctor', doctor_id=0) }}".replace('/0', `/${doctorId}`);
+        const exportUrl = `/historico/exportar/doctor/${doctorId}`;
         
         // Redirigir a la URL de exportación
         window.location.href = exportUrl;
@@ -148,25 +168,41 @@ document.addEventListener('DOMContentLoaded', function() {
         resultadosTabla.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div></div>';
         exportarExcelBtn.disabled = true;
 
-        // Construir la URL para la API
-        const apiUrl = "{{ url_for('historico.api_historico_doctor', doctor_id=0) }}".replace('/0', `/${doctorId}`);
+        // Construir la URL para la API (usando la ruta correcta con prefijo)
+        const apiUrl = `/historico/api/doctor/${doctorId}`;
         
         console.log("Llamando a API:", apiUrl);
+        console.log("Método: GET");
+        console.log("Headers: XMLHttpRequest");
         
         fetch(apiUrl, {
+            method: 'GET',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            }
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
         })
         .then(response => {
+            console.log("Response status:", response.status);
+            console.log("Response headers:", response.headers);
+            
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                console.error(`HTTP error! status: ${response.status}`);
+                // Intentar leer el cuerpo del error
+                return response.text().then(text => {
+                    throw new Error(`HTTP ${response.status}: ${text}`);
+                });
             }
             return response.json();
         })
         .then(data => {
             console.log("Datos recibidos:", data);
+            console.log("Tipo de datos:", typeof data);
+            console.log("Es array?", Array.isArray(data));
+            console.log("Longitud:", data.length);
+            
             datosActuales = data; // Guardar los datos para exportación
             resultadosTabla.innerHTML = tablaHistoricoTemplate({ historicos: data });
             
@@ -175,7 +211,14 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error completo:', error);
-            resultadosTabla.innerHTML = `<div class="alert alert-danger">Error al cargar los datos: ${error.message}</div>`;
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+            
+            resultadosTabla.innerHTML = `<div class="alert alert-danger">
+                <strong>Error al cargar los datos:</strong>
+                <p>${error.message}</p>
+                <small>Verifica la consola del navegador (F12) para más detalles.</small>
+            </div>`;
             exportarExcelBtn.disabled = true;
             datosActuales = [];
         });
