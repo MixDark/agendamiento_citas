@@ -34,7 +34,7 @@ file_handler.setLevel(logging.INFO)
 # Formato del log con zona horaria de Colombia
 formatter = ColombiaTimeFormatter(
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%d/%m/%Y %H:%M:%S'
+    datefmt='%Y/%m/%d %H:%M:%S'
 )
 file_handler.setFormatter(formatter)
 
