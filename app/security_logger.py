@@ -3,10 +3,24 @@ Módulo de logging de eventos de seguridad.
 Registra intentos de login fallidos, cambios de contraseña, y otros eventos de seguridad.
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from functools import wraps
 from flask import request
 from flask_login import current_user
+
+# Zona horaria de Colombia (UTC-5)
+COLOMBIA_TZ = timezone(timedelta(hours=-5))
+
+class ColombiaTimeFormatter(logging.Formatter):
+    """Formatter personalizado para mostrar hora de Colombia"""
+    def formatTime(self, record, datefmt=None):
+        ct = datetime.fromtimestamp(record.created, COLOMBIA_TZ)
+        if datefmt:
+            s = ct.strftime(datefmt)
+        else:
+            t = ct.strftime("%d/%m/%Y %H:%M:%S")
+            s = t
+        return s
 
 
 # Configurar logger de seguridad
@@ -17,10 +31,10 @@ security_logger.setLevel(logging.INFO)
 file_handler = logging.FileHandler('logs/security.log', encoding='utf-8')
 file_handler.setLevel(logging.INFO)
 
-# Formato del log
-formatter = logging.Formatter(
+# Formato del log con zona horaria de Colombia
+formatter = ColombiaTimeFormatter(
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    datefmt='%d/%m/%Y %H:%M:%S'
 )
 file_handler.setFormatter(formatter)
 
