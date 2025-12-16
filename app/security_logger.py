@@ -18,7 +18,7 @@ class ColombiaTimeFormatter(logging.Formatter):
         if datefmt:
             s = ct.strftime(datefmt)
         else:
-            t = ct.strftime("%d/%m/%Y %H:%M:%S")
+            t = ct.strftime("%Y/%m/%d %H:%M:%S")
             s = t
         return s
 
