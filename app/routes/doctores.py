@@ -29,7 +29,7 @@ def nuevo():
         try:
             Doctor.crear(cedula, nombre, apellido, telefono)
             flash('Doctor registrado exitosamente', 'success')
-            return redirect(url_for('citas.nueva'))
+            return redirect(url_for('doctores.index'))
         except Exception as e:
             flash('Error al registrar el doctor: ' + str(e), 'danger')
     
@@ -56,7 +56,7 @@ def editar(id_doctor):
             
             mysql.connection.commit()
             flash('Doctor actualizado exitosamente', 'success')
-            return redirect(url_for('citas.nueva'))
+            return redirect(url_for('doctores.index'))
         
         cur.execute('''
             SELECT id_doctor, nombre, apellido, telefono 
@@ -68,7 +68,7 @@ def editar(id_doctor):
         
         if doctor is None:
             flash('Doctor no encontrado', 'danger')
-            return redirect(url_for('citas.nueva'))
+            return redirect(url_for('doctores.index'))
         
         doctor_data = list(doctor)
         
@@ -78,8 +78,23 @@ def editar(id_doctor):
                              
     except Exception as e:
         flash('Error al procesar la solicitud: ' + str(e), 'danger')
-        return redirect(url_for('citas.nueva'))
+        return redirect(url_for('doctores.index'))
         
     finally:
         if cur:
             cur.close()
+
+@doctores_bp.route('/eliminar/<int:id_doctor>', methods=['POST'])
+@login_required
+def eliminar(id_doctor):
+    cur = mysql.connection.cursor()
+    try:
+        cur.execute('DELETE FROM doctores WHERE id_doctor = %s', (id_doctor,))
+        mysql.connection.commit()
+        flash('Doctor eliminado exitosamente', 'success')
+    except Exception as e:
+        flash('Error al eliminar el doctor: ' + str(e), 'danger')
+    finally:
+        cur.close()
+    
+    return redirect(url_for('doctores.index'))

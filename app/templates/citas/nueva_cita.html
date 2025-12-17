@@ -20,15 +20,6 @@
                                     <option value="{{ paciente[0] }}">{{ paciente[1] }} {{ paciente[2] }}</option>
                                     {% endfor %}
                                 </select>
-                                <div class="input-group-append d-flex gap-2">
-                                    <a href="{{ url_for('pacientes.nuevo') }}" class="btn btn-success">
-                                        <i class="fas fa-user-plus"></i> Nuevo
-                                    </a>
-                                    <a href="#" class="btn btn-warning" id="btnEditarPaciente" disabled
-                                        data-url-base="{{ url_for('pacientes.editar', id_paciente=0) }}">
-                                        <i class="fas fa-edit"></i> Editar
-                                    </a>
-                                </div>
                                 <div class="invalid-feedback">
                                     Por favor seleccione un paciente
                                 </div>
@@ -44,15 +35,6 @@
                                     <option value="{{ doctor[0] }}">{{ doctor[1] }} {{ doctor[2] }}</option>
                                     {% endfor %}
                                 </select>
-                                <div class="input-group-append d-flex gap-2">
-                                    <a href="{{ url_for('doctores.nuevo') }}" class="btn btn-success">
-                                        <i class="fas fa-user-plus"></i> Nuevo
-                                    </a>
-                                    <a href="#" class="btn btn-warning" id="btnEditarDoctor" disabled
-                                        data-url-base="{{ url_for('doctores.editar', id_doctor=0) }}">
-                                        <i class="fas fa-edit"></i> Editar
-                                    </a>
-                                </div>
                                 <div class="invalid-feedback">
                                     Por favor seleccione un doctor
                                 </div>

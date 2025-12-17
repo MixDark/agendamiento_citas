@@ -249,9 +249,10 @@ class Cita:
         # Base de la consulta
         query = '''
             SELECT c.id_cita, p.nombre, p.apellido, c.fecha, c.hora, 
-                c.motivo, c.estado
+                c.motivo, c.estado, d.nombre, d.apellido
             FROM citas c
             JOIN pacientes p ON c.id_paciente = p.id_paciente
+            JOIN doctores d ON c.id_doctor = d.id_doctor
             WHERE 1=1
         '''
         
@@ -269,7 +270,7 @@ class Cita:
             params.extend([año, mes])
         
         # Ordenar los resultados
-        query += ' ORDER BY c.fecha DESC, c.hora DESC'
+        query += ' ORDER BY c.fecha ASC, c.hora ASC'
         
         # Ejecutar la consulta
         cur.execute(query, tuple(params))

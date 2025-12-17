@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Pacientes registrados</h2>
+
+    <a href="{{ url_for('pacientes.nuevo') }}" class="btn btn-primary mb-3">
+        <i class="fas fa-plus"></i> Nuevo
+    </a>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Teléfono</th>
+                    <th>Correo electrónico</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for paciente in pacientes %}
+                <tr>
+                    <td>{{ paciente[1] }}</td>
+                    <td>{{ paciente[2] }}</td>
+                    <td>{{ paciente[3] }}</td>
+                    <td>{{ paciente[4] }}</td>
+                    <td>
+                        <div class="btn-group gap-2" role="group">
+                            <a href="{{ url_for('pacientes.editar', id_paciente=paciente[0]) }}" class="btn btn-warning btn-sm"
+                                title="Editar">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                            <form action="{{ url_for('pacientes.eliminar', id_paciente=paciente[0]) }}" method="POST"
+                                style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-danger btn-sm"
+                                    onclick="return confirm('¿Está seguro de que desea eliminar este paciente?')"
+                                    title="Eliminar">
+                                    <i class="fas fa-trash"></i> Eliminar
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center">No hay pacientes registrados</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

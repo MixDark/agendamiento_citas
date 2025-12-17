@@ -77,6 +77,24 @@
                             <i class="fas fa-calendar-check"></i> Agendamiento
                         </a>
                     </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="registroDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-plus"></i> Registro
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="registroDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('doctores.index') }}">
+                                    <i class="fas fa-user-md"></i> Doctor
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('pacientes.index') }}">
+                                    <i class="fas fa-user-injured"></i> Paciente
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                     <!-- Cambiado de enlace simple a dropdown -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="historicoDropdown" role="button"

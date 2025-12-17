@@ -29,7 +29,7 @@ def index():
                 'date', today.strftime('%Y-%m-%d'))
             filter_date = datetime.strptime(filter_date_str, '%Y-%m-%d').date()
             filter_month = today.strftime('%Y-%m')
-            title = "Citas del día"
+            title = "Próximas citas"
 
             # Usar el método optimizado para filtrar por día
             filtered_citas = Cita.obtener_todas(
@@ -42,7 +42,7 @@ def index():
                 'month', today.strftime('%Y-%m'))
             filter_year, filter_month_num = map(
                 int, filter_month_str.split('-'))
-            title = "Citas del mes"
+            title = "Próximas citas"
 
             # Usar el método optimizado para filtrar por mes
             filtered_citas = Cita.obtener_todas(

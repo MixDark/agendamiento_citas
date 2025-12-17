@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Doctores registrados</h2>
+
+    <a href="{{ url_for('doctores.nuevo') }}" class="btn btn-primary mb-3">
+        <i class="fas fa-plus"></i> Nuevo
+    </a>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Teléfono</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doctor in doctores %}
+                <tr>
+                    <td>{{ doctor[1] }}</td>
+                    <td>{{ doctor[2] }}</td>
+                    <td>{{ doctor[3] }}</td>
+                    <td>
+                        <div class="btn-group gap-2" role="group">
+                            <a href="{{ url_for('doctores.editar', id_doctor=doctor[0]) }}" class="btn btn-warning btn-sm"
+                                title="Editar">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                            <form action="{{ url_for('doctores.eliminar', id_doctor=doctor[0]) }}" method="POST"
+                                style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-danger btn-sm"
+                                    onclick="return confirm('¿Está seguro de que desea eliminar este doctor?')"
+                                    title="Eliminar">
+                                    <i class="fas fa-trash"></i> Eliminar
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center">No hay doctores registrados</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

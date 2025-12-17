@@ -8,6 +8,37 @@ from flask import send_file, jsonify
 from datetime import datetime, timedelta, date, time
 import logging
 
+# Intentar importar reportlab para PDF; si no está instalado, seguiremos soportando solo Excel
+try:
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    REPORTLAB_AVAILABLE = True
+except Exception:
+    REPORTLAB_AVAILABLE = False
+
+# Definir helper para cabecera/pie si reportlab está disponible
+if REPORTLAB_AVAILABLE:
+    def _pdf_header_footer(canvas, doc):
+        canvas.saveState()
+        width, height = A4
+        # Cabecera
+        canvas.setFont('Helvetica-Bold', 12)
+        canvas.setFillColor(colors.HexColor('#0066CC'))
+        canvas.drawCentredString(width / 2.0, height - 30, 'Isis Med - Histórico de citas')
+        # Línea debajo de la cabecera
+        canvas.setStrokeColor(colors.HexColor('#0066CC'))
+        canvas.setLineWidth(1)
+        canvas.line(40, height - 36, width - 40, height - 36)
+
+        # Pie de página: número de página a la derecha
+        page_num_text = f"Página {doc.page}"
+        canvas.setFont('Helvetica', 9)
+        canvas.setFillColor(colors.grey)
+        canvas.drawRightString(width - 40, 20, page_num_text)
+        canvas.restoreState()
+
 # Configurar logger para auditoría
 logger = logging.getLogger(__name__)
 
@@ -202,7 +233,6 @@ def api_historico_doctor(doctor_id):
         cur.execute('SELECT id_doctor FROM doctores WHERE id_doctor = %s', (doctor_id,))
         if not cur.fetchone():
             cur.close()
-            logger.warning(f"Usuario {current_user.id} intentó acceder a doctor inexistente: {doctor_id}")
             return jsonify({"error": "Doctor no encontrado"}), 404
         
         # 2. Registrar auditoría
@@ -310,7 +340,7 @@ def exportar_excel_doctor(doctor_id):
         # 6. Generar el Excel
         doctor_nombre = f"{doctor_info[0]} {doctor_info[1]}"
         titulo = f"Histórico de citas - Dr. {doctor_nombre}"
-        nombre_archivo = f"Historico_Doctor_{doctor_info[1]}_{doctor_info[0]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        nombre_archivo = f"Historico_Doctor_{doctor_info[1]}_{doctor_info[0]}_{datetime.now().strftime('%d%m%Y_%H%M%S')}.xlsx"
 
         return generar_excel_historico(citas, titulo, nombre_archivo)
 
@@ -386,7 +416,7 @@ def exportar_excel_paciente(paciente_id):
         # 6. Generar el Excel
         paciente_nombre = f"{paciente_info[0]} {paciente_info[1]}"
         titulo = f"Histórico de citas - Paciente: {paciente_nombre}"
-        nombre_archivo = f"Historico_Paciente_{paciente_info[1]}_{paciente_info[0]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        nombre_archivo = f"Historico_Paciente_{paciente_info[1]}_{paciente_info[0]}_{datetime.now().strftime('%d%m%Y_%H%M%S')}.xlsx"
 
         return generar_excel_historico(citas, titulo, nombre_archivo)
 
@@ -394,6 +424,226 @@ def exportar_excel_paciente(paciente_id):
         logger.error(f"Error al exportar Excel del paciente {paciente_id}: {str(e)}", exc_info=True)
         return jsonify({"error": "Error interno del servidor"}), 500
 
+
+@historico_bp.route('/exportar/pdf/doctor/<int:doctor_id>')
+@login_required
+@limiter.limit("20 per minute")
+def exportar_pdf_doctor(doctor_id):
+        """Exportar histórico de un doctor a PDF."""
+        if not REPORTLAB_AVAILABLE:
+            return jsonify({"error": "La generación de PDF requiere la librería reportlab (instalar reportlab)"}), 501
+        try:
+            cur = mysql.connection.cursor()
+            cur.execute('SELECT nombre, apellido FROM doctores WHERE id_doctor = %s', (doctor_id,))
+            doctor_info = cur.fetchone()
+            if not doctor_info:
+                cur.close()
+                return jsonify({"error": "Doctor no encontrado"}), 404
+
+            # Obtener citas
+            cur.execute('''
+                SELECT 
+                    DATE_FORMAT(c.fecha, '%%d/%%m/%%Y') as fecha,
+                    DATE_FORMAT(c.hora, '%%H:%%i') as hora,
+                    CONCAT(p.nombre, ' ', p.apellido) as paciente,
+                    c.motivo,
+                    c.estado
+                FROM citas c
+                JOIN pacientes p ON c.id_paciente = p.id_paciente
+                WHERE c.id_doctor = %s AND c.estado IN ('completada', 'cancelada')
+                ORDER BY c.fecha DESC, c.hora DESC
+            ''', (doctor_id,))
+
+            citas = cur.fetchall()
+            cur.close()
+
+            # Crear PDF
+            buffer = io.BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=A4)
+            styles = getSampleStyleSheet()
+            elements = []
+
+            titulo = f"Histórico de citas - Dr. {doctor_info[0]} {doctor_info[1]}"
+            elements.append(Paragraph(titulo, styles['Title']))
+            elements.append(Spacer(1, 12))
+            elements.append(Paragraph(f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", styles['Normal']))
+            elements.append(Spacer(1, 12))
+
+            # Tabla
+            data = [['Fecha', 'Hora', 'Paciente', 'Motivo', 'Estado']]
+            for row in citas:
+                estado = mapear_estado(row[4])
+                data.append([row[0], row[1], row[2], row[3] or '', estado])
+
+            table = Table(data, repeatRows=1)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0066CC')),
+                ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+                ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+                ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#F8F9FA')])
+            ]))
+
+            elements.append(table)
+            doc.build(elements, onFirstPage=_pdf_header_footer, onLaterPages=_pdf_header_footer)
+            buffer.seek(0)
+
+            filename = f"Historico_Doctor_{doctor_info[1]}_{doctor_info[0]}_{datetime.now().strftime('%d%m%Y_%H%M%S')}.pdf"
+            return send_file(buffer, as_attachment=True, download_name=filename, mimetype='application/pdf')
+
+        except Exception as e:
+            logger.error(f"Error al generar PDF doctor {doctor_id}: {str(e)}", exc_info=True)
+            return jsonify({"error": "Error interno del servidor"}), 500
+
+
+@historico_bp.route('/exportar/pdf/paciente/<int:paciente_id>')
+@login_required
+@limiter.limit("20 per minute")
+def exportar_pdf_paciente(paciente_id):
+        """Exportar histórico de un paciente a PDF."""
+        if not REPORTLAB_AVAILABLE:
+            return jsonify({"error": "La generación de PDF requiere la librería reportlab (instalar reportlab)"}), 501
+        try:
+            cur = mysql.connection.cursor()
+            cur.execute('SELECT nombre, apellido FROM pacientes WHERE id_paciente = %s', (paciente_id,))
+            paciente_info = cur.fetchone()
+            if not paciente_info:
+                cur.close()
+                return jsonify({"error": "Paciente no encontrado"}), 404
+
+            cur.execute('''
+                SELECT 
+                    DATE_FORMAT(c.fecha, '%%d/%%m/%%Y') as fecha,
+                    DATE_FORMAT(c.hora, '%%H:%%i') as hora,
+                    CONCAT(d.nombre, ' ', d.apellido) as doctor,
+                    c.motivo,
+                    c.estado
+                FROM citas c
+                JOIN doctores d ON c.id_doctor = d.id_doctor
+                WHERE c.id_paciente = %s AND c.estado IN ('completada', 'cancelada')
+                ORDER BY c.fecha DESC, c.hora DESC
+            ''', (paciente_id,))
+
+            citas = cur.fetchall()
+            cur.close()
+
+            buffer = io.BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=A4)
+            styles = getSampleStyleSheet()
+            elements = []
+
+            titulo = f"Histórico de citas - Paciente: {paciente_info[0]} {paciente_info[1]}"
+            elements.append(Paragraph(titulo, styles['Title']))
+            elements.append(Spacer(1, 12))
+            elements.append(Paragraph(f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", styles['Normal']))
+            elements.append(Spacer(1, 12))
+
+            data = [['Fecha', 'Hora', 'Doctor', 'Motivo', 'Estado']]
+            for row in citas:
+                estado = mapear_estado(row[4])
+                data.append([row[0], row[1], row[2], row[3] or '', estado])
+
+            table = Table(data, repeatRows=1)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0066CC')),
+                ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+                ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+                ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ]))
+
+            elements.append(table)
+            # Fondo alterno en filas y header/footer
+            table.setStyle(TableStyle([
+                ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#F8F9FA')])
+            ]))
+            doc.build(elements, onFirstPage=_pdf_header_footer, onLaterPages=_pdf_header_footer)
+            buffer.seek(0)
+
+            filename = f"Historico_Paciente_{paciente_info[1]}_{paciente_info[0]}_{datetime.now().strftime('%d%m%Y_%H%M%S')}.pdf"
+            return send_file(buffer, as_attachment=True, download_name=filename, mimetype='application/pdf')
+
+        except Exception as e:
+            logger.error(f"Error al generar PDF paciente {paciente_id}: {str(e)}", exc_info=True)
+            return jsonify({"error": "Error interno del servidor"}), 500
+
+
+@historico_bp.route('/exportar/pdf/fecha')
+@login_required
+def exportar_pdf_fecha():
+    """Exportar histórico por rango de fechas a PDF."""
+    if not REPORTLAB_AVAILABLE:
+        return jsonify({"error": "La generación de PDF requiere la librería reportlab (instalar reportlab)"}), 501
+    try:
+        fecha_inicio = request.args.get('fecha_inicio')
+        fecha_fin = request.args.get('fecha_fin')
+        if not fecha_inicio or not fecha_fin:
+            return jsonify({"error": "Se requieren ambas fechas"}), 400
+
+        try:
+            fecha_inicio_obj = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+            fecha_fin_obj = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({"error": "Formato de fecha inválido"}), 400
+
+        cur = mysql.connection.cursor()
+        cur.execute('''
+            SELECT 
+                DATE_FORMAT(c.fecha, '%%d/%%m/%%Y') as fecha,
+                DATE_FORMAT(c.hora, '%%H:%%i') as hora,
+                CONCAT(p.nombre, ' ', p.apellido) as paciente,
+                CONCAT(d.nombre, ' ', d.apellido) as doctor,
+                c.motivo,
+                c.estado
+            FROM citas c
+            JOIN pacientes p ON c.id_paciente = p.id_paciente
+            JOIN doctores d ON c.id_doctor = d.id_doctor
+            WHERE c.fecha BETWEEN %s AND %s AND c.estado IN ('completada', 'cancelada')
+            ORDER BY c.fecha DESC, c.hora DESC
+        ''', (fecha_inicio_obj, fecha_fin_obj))
+
+        citas = cur.fetchall()
+        cur.close()
+
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        styles = getSampleStyleSheet()
+        elements = []
+
+        titulo = f"Histórico de citas - Período: {fecha_inicio} al {fecha_fin}"
+        elements.append(Paragraph(titulo, styles['Title']))
+        elements.append(Spacer(1, 12))
+        elements.append(Paragraph(f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", styles['Normal']))
+        elements.append(Spacer(1, 12))
+
+        data = [['Fecha', 'Hora', 'Paciente', 'Doctor', 'Motivo', 'Estado']]
+        for row in citas:
+            estado = mapear_estado(row[5])
+            data.append([row[0], row[1], row[2], row[3], row[4] or '', estado])
+
+        table = Table(data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0066CC')),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ]))
+
+        elements.append(table)
+        table.setStyle(TableStyle([
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#F8F9FA')])
+        ]))
+        doc.build(elements, onFirstPage=_pdf_header_footer, onLaterPages=_pdf_header_footer)
+        buffer.seek(0)
+
+        filename = f"Historico_Citas_{fecha_inicio}_{fecha_fin}_{datetime.now().strftime('%d%m%Y_%H%M%S')}.pdf"
+        return send_file(buffer, as_attachment=True, download_name=filename, mimetype='application/pdf')
+
+    except Exception as e:
+        logger.error(f"Error al exportar PDF por fecha: {str(e)}", exc_info=True)
+        return jsonify({"error": "Error interno del servidor"}), 500
 
 @historico_bp.route('/exportar/fecha')
 @login_required
