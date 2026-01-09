@@ -1,28 +1,28 @@
-# 🏥 Sistema de Agendamiento de Citas Médicas
+# 🏥 Sistema de agendamiento de citas médicas
 
 Sistema web completo para la gestión de citas médicas desarrollado con Flask, MySQL y Bootstrap. Incluye autenticación de usuarios, gestión de pacientes, doctores, citas y un panel de administración.
 
-## 🌟 Características Principales
+## 🌟 Características principales
 
-### Gestión de Citas
+### Gestión de citas
 - ✅ Crear, editar y eliminar citas
 - ✅ Visualización por día o mes
 - ✅ Estados de citas (Programada, Completada, Cancelada)
 - ✅ Verificación de disponibilidad de horarios
 - ✅ Notificaciones por correo electrónico
 
-### Gestión de Pacientes
+### Gestión de pacientes
 - ✅ Registro completo de pacientes
 - ✅ Historial de citas por paciente
 - ✅ Búsqueda y filtrado
 - ✅ Información de contacto
 
-### Gestión de Doctores
+### Gestión de doctores
 - ✅ Registro de doctores
 - ✅ Verificación de disponibilidad
 - ✅ Historial de citas por doctor
 
-### Panel de Administración
+### Panel de administración
 - ✅ Gestión de usuarios
 - ✅ Asignación de roles (Admin/Usuario)
 - ✅ Activación/desactivación de cuentas
@@ -37,7 +37,7 @@ Sistema web completo para la gestión de citas médicas desarrollado con Flask, 
 - 📊 Logging de eventos de seguridad
 - 🔑 Políticas de contraseñas seguras
 
-## 🚀 Tecnologías Utilizadas
+## 🚀 Tecnologías utilizadas
 
 - **Backend:** Flask 3.0.0
 - **Base de Datos:** MySQL
@@ -48,7 +48,7 @@ Sistema web completo para la gestión de citas médicas desarrollado con Flask, 
 - **Frontend:** Bootstrap 5, JavaScript
 - **Servidor:** Waitress (Windows) / Gunicorn (Linux)
 
-## 📋 Requisitos Previos
+## 📋 Requisitos previos
 
 - Python 3.8 o superior
 - MySQL 5.7 o superior
@@ -121,7 +121,7 @@ Copiar la clave generada al archivo `.env`.
 
 ## ▶️ Ejecución
 
-### Modo Desarrollo
+### Modo desarrollo
 
 ```bash
 python run.py
@@ -129,7 +129,7 @@ python run.py
 
 La aplicación se abrirá automáticamente en `http://localhost:8000`
 
-### Modo Producción
+### Modo producción
 
 ```bash
 python produccion.py
@@ -139,7 +139,7 @@ El script detectará automáticamente tu sistema operativo y usará:
 - **Waitress** en Windows
 - **Gunicorn** en Linux/Mac
 
-## 👤 Usuarios por Defecto
+## 👤 Usuarios por defecto
 
 Después de ejecutar el script SQL, puedes iniciar sesión con:
 
@@ -148,7 +148,7 @@ Después de ejecutar el script SQL, puedes iniciar sesión con:
 
 > ⚠️ **Importante:** Cambia la contraseña del administrador después del primer inicio de sesión.
 
-## 📁 Estructura del Proyecto
+## 📁 Estructura del proyecto
 
 ```
 agendamiento_citas/
@@ -192,7 +192,7 @@ Este proyecto implementa múltiples capas de seguridad:
 - **Sesiones seguras:** HttpOnly, SameSite, expiración automática
 - **Logging:** Registro de eventos de seguridad en `logs/security.log`
 
-## 📧 Configuración de Email
+## 📧 Configuración de email
 
 Para usar notificaciones por correo:
 
@@ -218,17 +218,18 @@ Este proyecto está bajo la Licencia MIT.
 
 **Tu Nombre**
 
-## 🐛 Reportar Problemas
+## 🐛 Reportar problemas
 
 Si encuentras algún bug o tienes sugerencias, por favor abre un [issue](https://github.com/tu-usuario/agendamiento_citas/issues).
 
 ## 📸 Capturas de Pantalla
 
-### Panel de Citas
-![Citas](docs/screenshots/citas.png)
+### Pantalla principal
+<img width="1270" height="611" alt="Pantalla principal" src="https://github.com/user-attachments/assets/0740c79e-af2f-4148-a203-2c451d4a0b3b" />
 
-### Panel de Administración
-![Admin](docs/screenshots/admin.png)
+### Panel de administración
+<img width="1919" height="619" alt="Admin" src="https://github.com/user-attachments/assets/f3f8df4a-ef5b-4246-9364-7036e1f1fa6f" />
+
 
 ---
 
